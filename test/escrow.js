@@ -28,6 +28,9 @@ describe('Escrow', () => {
     XToken = await XTokenContract.new({from: seller});
     Escrow = await EscrowContract.new(seller, buyer, XToken.address);
 
+    // Check token balance of seller
+    expect((await XToken.balanceOf(seller)).toString()).equal(((await XToken.totalSupply())).toString());
+
     // Seller authorize smart contract to use its token
     await XToken.approve(Escrow.address, 20, {from: seller})
 
@@ -36,10 +39,17 @@ describe('Escrow', () => {
     initBalanceSeller = weiToEth(await web3.eth.getBalance(seller));
   })
 
-  it("Test e2e EA", async () => {
+  it("Test seller deposit", async () => {
     await Escrow.sellerDeposit(20, ethToWei(1), {from: seller, gasPrice: 0});
-    await Escrow.buyerDeposit({from: buyer, value: ethToWei(1), gasPrice: 0});
+    expect((await XToken.balanceOf(seller)).toString()).equal(((await XToken.totalSupply())- 20).toString());
+  })
 
+  it("Test buyer deposit", async () => {
+    await Escrow.buyerDeposit({from: buyer, value: ethToWei(1), gasPrice: 0});
+    expect(weiToEth(await web3.eth.getBalance(buyer))).equal(initBalanceBuyer - 1);
+  })
+
+  it("Test widthdraw", async () => {
     await Escrow.widthdraw({from: seller, gasPrice: 0});
     await Escrow.widthdraw({from: buyer, gasPrice: 0});
 

@@ -14,21 +14,19 @@ contract Escrow {
     address public buyer;
 
     //
-    IERC20 public asset;
+    IERC20 public token;
     uint256 amountTknDeposit;
-
-    //
     uint256 public amountEthRequested;
 
     //
     constructor(
         address payable _seller,
         address _buyer,
-        address _asset
+        address _token
     ) public {
         seller = _seller;
         buyer = _buyer;
-        asset = IERC20(_asset);
+        token = IERC20(_token);
 
         //
         amountEthRequested = 0;
@@ -43,16 +41,21 @@ contract Escrow {
         require(msg.sender == seller, "Seller only method");
         require(state == State.NEW, "Not waiting for seller deposit");
         require(
-            _amountTknDeposit <= asset.balanceOf(seller),
+            _amountTknDeposit <= token.balanceOf(seller),
             "Not enough tkn to deposit"
         );
 
         amountTknDeposit = _amountTknDeposit;
         amountEthRequested = _amountEthRequested;
-        state = State.WAITING_PAYMENT;
 
-        asset.approve(address(this), _amountTknDeposit);
-        require(asset.transferFrom(seller, address(this), amountTknDeposit));
+        // Approve contract to use deposited TKN later on
+        token.approve(address(this), _amountTknDeposit);
+
+        // Transfer seller token to contract
+        require(token.transferFrom(seller, address(this), amountTknDeposit));
+
+        //
+        state = State.WAITING_PAYMENT;
     }
 
     function buyerDeposit() external payable {
@@ -60,6 +63,7 @@ contract Escrow {
         require(state == State.WAITING_PAYMENT, "Not waiting for payment");
         require(msg.value == amountEthRequested, "Didn't send enough ether");
 
+        //
         state = State.COMPLETE;
     }
 
@@ -71,7 +75,7 @@ contract Escrow {
         if (msg.sender == seller) {
             seller.transfer(amountEthRequested);
         } else if (msg.sender == buyer) {
-            asset.transferFrom(address(this), buyer, amountTknDeposit);
+            token.transferFrom(address(this), buyer, amountTknDeposit);
         } else revert();
     }
 }
