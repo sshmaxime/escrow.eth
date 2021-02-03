@@ -5,6 +5,10 @@
   "repository": "git@github.com:sshmaxime/escrow.eth.git",
   "author": "Maxime Aubanel <maximeauba@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "build": "truffle compile",
+    "test": "mocha"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "^3.4.0",
     "@openzeppelin/test-environment": "^0.1.9",
