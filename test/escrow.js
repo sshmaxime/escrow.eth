@@ -1,62 +1,16 @@
 const { accounts, defaultSender, contract, web3 } = require('@openzeppelin/test-environment');
 const { expect } = require('../chai-local');
+const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 
 const { expectRevert } = require('@openzeppelin/test-helpers');
 
-const XTokenContract = contract.fromArtifact("TokenX");
-const EscrowContract = contract.fromArtifact("Escrow");
-
-let XToken;
-let Escrow;
-
-let initBalanceSeller;
-let initBalanceBuyer;
-
-const ethToWei = (eth) => {
-  return web3.utils.toWei(String(eth), 'ether');
-}
-
-const weiToEth = (wei) => {
-  return parseInt(web3.utils.fromWei(wei, 'ether'));
-}
+const Escrow = contract.fromArtifact("Escrow");
 
 describe('Escrow', () => {
   const seller = accounts[0];
   const buyer = accounts[1];
 
-  before(async () => {
-    XToken = await XTokenContract.new({from: seller});
-    Escrow = await EscrowContract.new(seller, buyer, XToken.address);
-
-    // Check token balance of seller
-    expect((await XToken.balanceOf(seller)).toString()).equal(((await XToken.totalSupply())).toString());
-
-    // Seller authorize smart contract to use its token
-    await XToken.approve(Escrow.address, 20, {from: seller})
-
-    // Save initial balances
-    initBalanceBuyer = weiToEth(await web3.eth.getBalance(buyer));
-    initBalanceSeller = weiToEth(await web3.eth.getBalance(seller));
-  })
-
   it("Test seller deposit", async () => {
-    await Escrow.sellerDeposit(20, ethToWei(1), {from: seller, gasPrice: 0});
-    expect((await XToken.balanceOf(seller)).toString()).equal(((await XToken.totalSupply())- 20).toString());
-  })
-
-  it("Test buyer deposit", async () => {
-    await Escrow.buyerDeposit({from: buyer, value: ethToWei(1), gasPrice: 0});
-    expect(weiToEth(await web3.eth.getBalance(buyer))).equal(initBalanceBuyer - 1);
-  })
-
-  it("Test widthdraw", async () => {
-    await Escrow.widthdraw({from: seller, gasPrice: 0});
-    await Escrow.widthdraw({from: buyer, gasPrice: 0});
-
-    expect(weiToEth(await web3.eth.getBalance(seller))).equal(initBalanceSeller + 1);
-    expect(weiToEth(await web3.eth.getBalance(buyer))).equal(initBalanceBuyer - 1);
-
-    expect((await XToken.balanceOf(seller)).toString()).equal(((await XToken.totalSupply())- 20).toString());
-    expect((await XToken.balanceOf(buyer)).toString()).equal((20).toString());
+    const escrow = await deployProxy(Escrow, ["hello"]);
   })
 });
