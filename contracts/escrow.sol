@@ -8,7 +8,7 @@ contract Escrow is Initializable {
     string admin;
 
     //
-    function initialize(string memory _admin) public initializer {
-        admin = _admin;
+    function initialize() public initializer {
+        admin = "hello";
     }
 }
